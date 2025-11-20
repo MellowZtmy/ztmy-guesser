@@ -1,57 +1,662 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
   <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="images/favicon.png" type="image/png" />
-    <link rel="apple-touch-icon" href="images/favicon.png" type="image/png" />
-    <title>ずとまよ ANNIVERSARY</title>
-    <link rel="stylesheet" href="css/styles.css" />
-    <!-- Google tag (gtag.js) -->
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-2N8XCPYE1D"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
+    <title>ずとまよゲッサー</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      /* ======================================= */
+      /* CSS (style.cssの役割) */
+      /* ======================================= */
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 20px;
+        background-color: #f4f4f9;
+        color: #333;
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
       }
-      gtag('js', new Date());
 
-      gtag('config', 'G-2N8XCPYE1D');
-    </script>
+      h1 {
+        color: #4a4a8f;
+        text-align: center;
+        border-bottom: 3px solid #4a4a8f;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+      }
+
+      .game-area {
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      }
+
+      .guess-input-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        align-items: center;
+      }
+
+      #guessInput {
+        flex-grow: 1;
+        padding: 10px;
+        border: 2px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+
+      #guessInput:focus {
+        border-color: #4a4a8f;
+        outline: none;
+      }
+
+      #submitGuess {
+        padding: 10px 20px;
+        background-color: #4a4a8f;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+
+      #submitGuess:hover {
+        background-color: #6a6ad9;
+      }
+
+      .feedback-section {
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px dashed #ccc;
+      }
+
+      .feedback-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px dotted #eee;
+        font-size: 1.1em;
+      }
+
+      .feedback-item:last-child {
+        border-bottom: none;
+      }
+
+      .result-message {
+        font-size: 1.2em;
+        font-weight: bold;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        text-align: center;
+      }
+
+      .correct {
+        background-color: #e6ffed;
+        color: #28a745;
+        border: 2px solid #28a745;
+      }
+
+      .incorrect {
+        background-color: #ffe6e6;
+        color: #dc3545;
+        border: 2px solid #dc3545;
+      }
+
+      .result-detail {
+        font-weight: bold;
+      }
+
+      .match {
+        color: #28a745;
+      }
+
+      .mismatch {
+        color: #dc3545;
+      }
+
+      .guess-history {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f0f0f5;
+        border-radius: 5px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .history-item {
+        margin-bottom: 5px;
+        padding-left: 10px;
+        border-left: 3px solid #ccc;
+      }
+
+      .card-iframe-container {
+        position: relative;
+        width: 100%;
+        padding-bottom: 56.25%; /* 16:9 ratio */
+        height: 0;
+        margin-top: 20px;
+      }
+
+      .card-iframe-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* カスタムオートコンプリートのスタイル */
+      .autocomplete-suggestions {
+        border: 1px solid #ccc;
+        border-top: none;
+        max-height: 150px;
+        overflow-y: auto;
+        position: absolute;
+        z-index: 100;
+        width: calc(100% - 140px); /* Adjust width to fit the input area */
+        background-color: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 0 0 5px 5px;
+      }
+      .autocomplete-suggestion-item {
+        padding: 8px 10px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      .autocomplete-suggestion-item:hover,
+      .autocomplete-active {
+        background-color: #e9e9e9;
+      }
+    </style>
   </head>
   <body>
-    <div id="confetti" class="confetti">
-      <canvas></canvas>
-      <h1 id="header" class="center-text" onclick="location.reload(true) ">
-        ずとまよ <br />ANNIVERSARY
-      </h1>
-      <div class="margin-bottom-100" id="display"></div>
+    <div class="game-area">
+      <h1>🎧 ずとまよゲッサー 🎹</h1>
+      <p>
+        目標曲を推測してください。Guessするたびに、目標曲との違いがヒントとして表示されます。
+      </p>
+
+      <div class="guess-input-container">
+        <input
+          type="text"
+          id="guessInput"
+          placeholder="曲名を入力してください"
+          autocomplete="off"
+          list="songNames"
+        />
+        <button id="submitGuess" disabled>Guess</button>
+      </div>
+      <div id="autocompleteContainer" class="autocomplete-suggestions"></div>
+      <input type="hidden" id="selectedSongName" />
+
+      <div id="resultArea" class="feedback-section"></div>
+
+      <div id="historyArea" class="guess-history" style="display: none">
+        <strong>推測履歴 (Guess Count: <span id="guessCount">0</span>)</strong>
+        <ul id="historyList"></ul>
+      </div>
     </div>
-    <!-- オーバーレイと拡大画像表示用の要素 -->
-    <div id="overlay">
-      <img src="" alt="" />
-    </div>
-    <!-- スピナー -->
-    <div id="spinner" class="spinner"></div>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
-    <!-- Font Awesome 読み込み（CDN） -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    />
-    <script
-      type="text/javascript"
-      src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.3.2/dist/confetti.browser.min.js"
-    ></script>
-    <script src="js/confetti.js"></script>
-    <script src="js/functions.js"></script>
-    <script src="js/main.js"></script>
+
+    <script>
+      // =======================================
+      // JavaScript (script.jsの役割)
+      // =======================================
+
+      // ---------------------------------------
+      // App Settings (JSONファイルの内容)
+      // ---------------------------------------
+      const appsettings = {
+        appName: 'ztmyGuesser',
+        songsFileName:
+          'https://mellowztmy.github.io/ztmy-datas/common/datas/songs.csv',
+        songSkipRowCount: 4,
+        songNameCol: 2, // 曲名 (0-based)
+        writerCol: 4,
+        composerCol: 5,
+        arrangerCol: 6, // 編曲者 (0-based)
+        mvIdCol: 13, // MV ID (0-based)
+        MVReleaseDateCol: 9, // MV公開日 (0-based)
+        mvDirectorCol: 10, // MV作成者 (0-based)
+        minialbumCol: 14, // アルバム/ミニアルバム (0-based)
+        bpmCol: 15, // ★仮に追加: BPM (16列目と仮定)
+        mvUrlBaseYoutube: 'https://www.youtube.com/watch?v=',
+        comma: ',',
+        commaInString: '，',
+        noDataString: '-',
+      };
+
+      // ---------------------------------------
+      // 提供されたユーティリティ関数
+      // ---------------------------------------
+
+      // CSVデータを取得する関数
+      async function fetchCsvData(fileName, skipRowCount = 0) {
+        try {
+          const response = await fetch(fileName);
+          const text = await response.text();
+          return parseCsv(text, skipRowCount);
+        } catch (error) {
+          throw new Error('Failed to load CSV file:' + fileName);
+        }
+      }
+
+      // CSVデータをパースする関数（csvデータ内の「,」は「，」にしているため「,」に変換して返却）
+      function parseCsv(csvText, skipRowCount) {
+        var regx = new RegExp(appsettings.commaInString, 'g');
+        return csvText
+          .trim()
+          .split(/\r?\n|\r/)
+          .slice(skipRowCount)
+          .map((line) =>
+            line
+              .split(appsettings.comma)
+              .map((value) => value.replace(regx, appsettings.comma))
+          );
+      }
+
+      // JSONデータを取得する関数 (未使用だが提供されたため残す)
+      function getJsonData(jsonUrl) {
+        return new Promise((resolve, reject) => {
+          $.getJSON(jsonUrl, function (data) {
+            resolve(data);
+          }).fail(function () {
+            reject('Failed to load JSON file');
+          });
+        });
+      }
+
+      // データをローカルストレージからクリアする関数 (未使用だが提供されたため残す)
+      function removeLocal(key) {
+        localStorage.removeItem(appsettings.appName + '.' + key);
+      }
+
+      // データをローカルストレージにセットする関数 (未使用だが提供されたため残す)
+      function setLocal(key, value) {
+        localStorage.setItem(appsettings.appName + '.' + key, value);
+      }
+
+      // ローカルストレージからデータをゲットする関数 (未使用だが提供されたため残す)
+      function getLocal(key) {
+        return localStorage.getItem(appsettings.appName + '.' + key);
+      }
+
+      // ローカルストレージから配列を取得(nullは空に) (未使用だが提供されたため残す)
+      function getLocalArray(key) {
+        return (
+          JSON.parse(localStorage.getItem(appsettings.appName + '.' + key)) ??
+          []
+        );
+      }
+
+      // ローカルストレージに配列設定(nullは空に) (未使用だが提供されたため残す)
+      function setLocalArray(key, array) {
+        localStorage.setItem(
+          appsettings.appName + '.' + key,
+          JSON.stringify(array ?? [])
+        );
+      }
+
+      // エラー時処理
+      function showError(errorMsg1, errorMsg2) {
+        // コンソールに表示
+        console.error(errorMsg1, errorMsg2);
+        // 画面に表示
+        alert(errorMsg2);
+      }
+
+      // Youtubeタグ作成 (正解時に使用)
+      function createYoutubeTag(id, isPlayList) {
+        // 変数初期化
+        var tag = '';
+
+        // タグ生成
+        tag += '<div class="card-iframe-container">';
+        tag +=
+          ' 　 　 　 　<iframe src="https://www.youtube.com/embed/' +
+          (isPlayList ? 'videoseries?list=' : id + '?rel=0&autoplay=1') + // autoplayを追加
+          '" frameborder="0" allowfullscreen>';
+        tag += ' 　 </iframe> ';
+        tag += '</div> ';
+
+        return tag;
+      }
+
+      // Youtubeタグ作成 (未使用だが提供されたため残す)
+      function createYoutubeListTag(ids) {
+        // 変数初期化
+        var tag = '';
+
+        // タグ生成
+        tag += '<div class="card-iframe-container">';
+        tag +=
+          ' 　 　 　 　<iframe src="https://www.youtube.com/watch_videos?video_ids=' +
+          ids +
+          '" frameborder="0" allowfullscreen>';
+        tag += ' 　 </iframe> ';
+        tag += '</div> ';
+
+        return tag;
+      }
+
+      // ---------------------------------------
+      // ゲーム固有の変数とロジック
+      // ---------------------------------------
+      let allSongs = [];
+      let targetSong = null;
+      let guessCount = 0;
+      let songNames = [];
+      let isGameRunning = true;
+
+      // ゲーム初期化
+      async function initializeGame() {
+        try {
+          const csvData = await fetchCsvData(
+            appsettings.songsFileName,
+            appsettings.songSkipRowCount
+          );
+          allSongs = csvData
+            .map((row) => ({
+              name: row[appsettings.songNameCol],
+              mvId: row[appsettings.mvIdCol],
+              releaseDate: row[appsettings.MVReleaseDateCol],
+              director: row[appsettings.mvDirectorCol],
+              arranger: row[appsettings.arrangerCol],
+              album: row[appsettings.minialbumCol],
+              bpm: parseInt(row[appsettings.bpmCol]) || 130, // BPMが空欄の場合は仮に130とする
+            }))
+            .filter(
+              (song) => song.name && song.name !== appsettings.noDataString
+            ); // 有効な曲名のみフィルタ
+
+          if (allSongs.length === 0) {
+            showError(
+              'データエラー',
+              '楽曲データが読み込めませんでした。CSVの内容を確認してください。'
+            );
+            return;
+          }
+
+          songNames = allSongs.map((s) => s.name);
+          selectTargetSong();
+
+          // 初回は非表示
+          $('#historyArea').hide();
+          $('#submitGuess').prop('disabled', false);
+          $('#guessInput').focus();
+        } catch (error) {
+          showError(
+            '初期化エラー',
+            'データの読み込みに失敗しました。' + error.message
+          );
+        }
+      }
+
+      // 目標曲の選択
+      function selectTargetSong() {
+        // 曲名が「全曲」でないものを対象とする
+        const availableSongs = allSongs.filter((song) => song.name !== '全曲');
+        const randomIndex = Math.floor(Math.random() * availableSongs.length);
+        targetSong = availableSongs[randomIndex];
+        guessCount = 0;
+        isGameRunning = true;
+        $('#guessCount').text(guessCount);
+        $('#historyList').empty();
+        $('#resultArea').empty();
+        console.log('目標曲が設定されました:', targetSong.name); // デバッグ用
+      }
+
+      // 曲名から楽曲オブジェクトを取得
+      function getSongByName(songName) {
+        return allSongs.find((song) => song.name === songName);
+      }
+
+      // MV公開日の比較
+      function compareReleaseDate(guess, target) {
+        if (
+          !guess.releaseDate ||
+          !target.releaseDate ||
+          guess.releaseDate === appsettings.noDataString ||
+          target.releaseDate === appsettings.noDataString
+        ) {
+          return '比較不能';
+        }
+        const gDate = new Date(guess.releaseDate);
+        const tDate = new Date(target.releaseDate);
+
+        if (tDate > gDate) return '新しい'; // 目標曲の方が公開日が後
+        if (tDate < gDate) return '古い'; // 目標曲の方が公開日が前
+        return '同じ';
+      }
+
+      // テンポ (BPM) の比較
+      function compareBPM(guess, target) {
+        if (target.bpm > guess.bpm) return '速い';
+        if (target.bpm < guess.bpm) return '遅い';
+        return '同じ';
+      }
+
+      // Guess処理
+      function handleGuess() {
+        if (!isGameRunning) return;
+
+        const guessName = $('#guessInput').val();
+        if (!guessName) {
+          alert('曲名を入力してください。');
+          return;
+        }
+
+        const guessSong = getSongByName(guessName);
+
+        if (!guessSong) {
+          alert(
+            'リストにない曲名です。オートコンプリートから選択してください。'
+          );
+          return;
+        }
+
+        guessCount++;
+        $('#guessCount').text(guessCount);
+        $('#historyArea').show();
+        $('#guessInput').val(''); // 入力欄をクリア
+
+        // 正解判定
+        if (guessSong.name === targetSong.name) {
+          isGameRunning = false;
+          displayCorrectResult(targetSong);
+        } else {
+          displayFeedback(guessSong, targetSong);
+        }
+      }
+
+      // 正解時の結果表示
+      function displayCorrectResult(song) {
+        let resultHtml = `
+                <div class="result-message correct">🎉 正解です！🎉</div>
+                <p style="text-align:center; font-size:1.5em; margin:20px 0;"><strong>目標曲: ${song.name}</strong></p>
+                <button onclick="window.location.reload()" style="display:block; margin:0 auto; padding:10px 20px; background-color:#28a745; color:white; border:none; border-radius:5px; cursor:pointer;">もう一度プレイする</button>
+            `;
+
+        // MV埋め込み
+        if (song.mvId && song.mvId !== appsettings.noDataString) {
+          resultHtml += createYoutubeTag(song.mvId, false);
+        } else {
+          resultHtml += `<p style="text-align:center; margin-top:20px;">（この曲にはMVがありません）</p>`;
+        }
+
+        $('#resultArea').html(resultHtml);
+        addHistory(song.name, true);
+      }
+
+      // 不正解時のフィードバック表示
+      function displayFeedback(guess, target) {
+        const dateComparison = compareReleaseDate(guess, target);
+        const bpmComparison = compareBPM(guess, target);
+
+        // フィードバックロジック
+        const feedbackItems = [
+          {
+            label: 'MVの有無',
+            guessValue:
+              guess.mvId && guess.mvId !== appsettings.noDataString
+                ? 'あり'
+                : 'なし',
+            targetValue:
+              target.mvId && target.mvId !== appsettings.noDataString
+                ? 'あり'
+                : 'なし',
+            comparison:
+              (guess.mvId && guess.mvId !== appsettings.noDataString) ===
+              (target.mvId && target.mvId !== appsettings.noDataString)
+                ? '✅ 一致'
+                : '❌ 不一致',
+          },
+          {
+            label: 'MV公開日',
+            guessValue: guess.releaseDate,
+            comparison:
+              dateComparison === '同じ'
+                ? '✅ 同じ'
+                : dateComparison === '比較不能'
+                ? '❓ データなし'
+                : '📅 目標曲はGuess曲より' + dateComparison,
+          },
+          {
+            label: 'MV作成者',
+            guessValue: guess.director,
+            comparison:
+              guess.director === target.director ? '✅ 一致' : '❌ 不一致',
+          },
+          {
+            label: '編曲者',
+            guessValue: guess.arranger,
+            comparison:
+              guess.arranger === target.arranger ? '✅ 一致' : '❌ 不一致',
+          },
+          {
+            label: '収録アルバム/ミニアルバム',
+            guessValue: guess.album,
+            comparison: guess.album === target.album ? '✅ 一致' : '❌ 不一致',
+          },
+          {
+            label: 'テンポ (BPM)',
+            guessValue: `${guess.bpm} BPM`,
+            comparison:
+              bpmComparison === '同じ'
+                ? '✅ 同じ'
+                : `テンポはGuess曲より ${bpmComparison}`,
+          },
+        ];
+
+        let html = `
+                <div class="result-message incorrect">❌ 間違い！ ${guess.name} は目標曲ではありません。</div>
+                <div class="feedback-details">
+                    <p style="text-align:center;"><strong>Guess曲 (${guess.name}) と目標曲との比較</strong></p>
+            `;
+
+        feedbackItems.forEach((item) => {
+          const isMatch = item.comparison.includes('✅');
+          html += `
+                    <div class="feedback-item">
+                        <span>${item.label} (Guess: ${
+            item.guessValue === appsettings.noDataString
+              ? 'データなし'
+              : item.guessValue
+          })</span>
+                        <span class="result-detail ${
+                          isMatch ? 'match' : 'mismatch'
+                        }">${item.comparison}</span>
+                    </div>
+                `;
+        });
+
+        html += '</div>';
+
+        $('#resultArea').html(html);
+        addHistory(guess.name, false);
+      }
+
+      // 履歴の追加
+      function addHistory(songName, isCorrect) {
+        $('#historyList').prepend(`
+                <li class="history-item ${isCorrect ? 'match' : 'mismatch'}">
+                    ${guessCount}回目: ${songName} ${
+          isCorrect ? '【正解】' : '【不正解】'
+        }
+                </li>
+            `);
+      }
+
+      // ---------------------------------------
+      // イベントリスナーとオートコンプリート
+      // ---------------------------------------
+
+      // オートコンプリートの表示
+      function renderAutocomplete(filteredSongs) {
+        const container = $('#autocompleteContainer').empty();
+        if (filteredSongs.length === 0) return;
+
+        filteredSongs.slice(0, 10).forEach((songName) => {
+          const item = $('<div>')
+            .addClass('autocomplete-suggestion-item')
+            .text(songName)
+            .on('click', function () {
+              $('#guessInput').val(songName);
+              $('#autocompleteContainer').empty();
+              $('#guessInput').focus();
+            });
+          container.append(item);
+        });
+      }
+
+      $(document).ready(function () {
+        initializeGame();
+
+        // 入力時のオートコンプリート処理
+        $('#guessInput').on('input', function () {
+          const inputVal = $(this).val().toLowerCase();
+          if (inputVal.length === 0) {
+            $('#autocompleteContainer').empty();
+            return;
+          }
+
+          const filteredSongs = songNames.filter((name) =>
+            name.toLowerCase().includes(inputVal)
+          );
+
+          renderAutocomplete(filteredSongs);
+        });
+
+        // 回答ボタンの処理
+        $('#submitGuess').on('click', handleGuess);
+
+        // Enterキーでの回答処理
+        $('#guessInput').on('keypress', function (e) {
+          if (e.which === 13) {
+            // オートコンプリートが表示されていない場合にのみGuessを実行
+            if ($('#autocompleteContainer').is(':empty')) {
+              handleGuess();
+            } else {
+              // 最初の候補を選択してGuessすることも可能だが、今回はEnterでオートコンプリートを閉じ、もう一度Enterで回答とする
+              $('#autocompleteContainer').empty();
+            }
+          }
+        });
+
+        // 外部クリックでオートコンプリートを閉じる
+        $(document).on('click', function (e) {
+          if (!$(e.target).closest('.guess-input-container').length) {
+            $('#autocompleteContainer').empty();
+          }
+        });
+      });
+    </script>
   </body>
 </html>
